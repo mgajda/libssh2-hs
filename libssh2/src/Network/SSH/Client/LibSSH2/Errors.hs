@@ -167,7 +167,7 @@ handleNullPtr s fromPointer io = do
         (r, _) <- getLastError session
         case int2error r of
           EAGAIN -> threadWaitSession (Just session) >> handleNullPtr s fromPointer io
-          _      -> throw NULL_POINTER -- TODO: should we throw the error instead?
+          err    -> throw err          -- TODO: should we throw the error instead?
     else fromPointer p
 
 -- | Get currently blocked directions
