@@ -37,10 +37,11 @@ module Network.SSH.Client.LibSSH2.Foreign
    TraceFlag (..), setTraceMode
   ) where
 
-import Foreign
+import Control.Monad(void)
+import Foreign hiding(void)
 import Foreign.C.Types
 import Foreign.C.String
-import Foreign.Ptr
+import Foreign.Ptr()
 import System.IO
 import Network.Socket (Socket(MkSocket))
 import Data.Time.Clock.POSIX
@@ -204,9 +205,10 @@ knownHostsReadFile kh path = handleInt Nothing $ knownHostsReadFile_ kh path 1
 {# fun session_hostkey as wrapped_getHostKey
   { toPointer `Session', alloca- `Size' peek*, alloca- `CInt' peek* } -> `CString' id #}
 
+getHostKey :: Session -> IO (String, Size, CInt)
 getHostKey s = do (ptr_char, ptr_len, typ) <- wrapped_getHostKey s
-                  s <- BSC.packCStringLen (ptr_char, fromIntegral ptr_len)
-                  s `seq` return (BSC.unpack s, ptr_len, typ)
+                  s' <- BSC.packCStringLen (ptr_char, fromIntegral ptr_len)
+                  s' `seq` return (BSC.unpack s', ptr_len, typ)
 
 {# fun knownhost_checkp as checkKnownHost_
   { toPointer `KnownHosts',
