@@ -40,11 +40,13 @@ module Network.SSH.Client.LibSSH2.Foreign
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String
+import Foreign.Ptr
 import System.IO
 import Network.Socket (Socket(MkSocket))
 import Data.Time.Clock.POSIX
 import qualified Data.ByteString as BSS
 import qualified Data.ByteString.Unsafe as BSS
+import qualified Data.ByteString.Char8 as BSC
 
 import Network.SSH.Client.LibSSH2.Types
 import Network.SSH.Client.LibSSH2.Errors
@@ -199,8 +201,12 @@ knownHostsReadFile :: KnownHosts
 knownHostsReadFile kh path = handleInt Nothing $ knownHostsReadFile_ kh path 1
 
 -- | Get remote host public key
-{# fun session_hostkey as getHostKey
-  { toPointer `Session', alloca- `Size' peek*, alloca- `CInt' peek* } -> `String' #}
+{# fun session_hostkey as wrapped_getHostKey
+  { toPointer `Session', alloca- `Size' peek*, alloca- `CInt' peek* } -> `CString' id #}
+
+getHostKey s = do (ptr_char, ptr_len, typ) <- wrapped_getHostKey s
+                  s <- BSC.packCStringLen (ptr_char, fromIntegral ptr_len)
+                  s `seq` return (BSC.unpack s, ptr_len, typ)
 
 {# fun knownhost_checkp as checkKnownHost_
   { toPointer `KnownHosts',
